@@ -79,7 +79,7 @@ function App() {
   }, [activities]);
 
   // Mock PDF processing function
-  const processPdfMock = async (file) => {
+  const processPdf = async (file) => {
     // Simulate processing time
     await new Promise(resolve => setTimeout(resolve, 1500));
     
@@ -106,7 +106,7 @@ der kombinerer teoretisk viden med hands-on erfaring.`;
   };
 
   // Mock suggestion function
-  const generateSuggestionMock = async (combinedText, profile) => {
+  const generateSuggestion = async (combinedText, profile) => {
     // Simulate processing time
     await new Promise(resolve => setTimeout(resolve, 1000));
     
@@ -189,34 +189,8 @@ Disse aktiviteter vil hjælpe dig med at opnå de ønskede læringsmål.`;
       alert('Vælg venligst en PDF fil');
       return;
     }
-
-    try {
-      setSummary("Behandler PDF...");
-      
-      const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
-      if (!functionsUrl) {
-        throw new Error('VITE_SUPABASE_FUNCTIONS_URL er ikke konfigureret');
-      }
-      
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch(`${functionsUrl}/pdfsummary`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      setSummary(data.summary);
+      const summary = await processPdf(file);
+      setSummary(summary);
     } catch (error) {
       console.error('Fejl ved upload:', error);
       setSummary('Fejl ved behandling af PDF. Prøv igen.');
@@ -256,35 +230,8 @@ ${(goals.færdighedsmål || []).join("\n")}
 `;
 
     try {
-      setSuggestion("Genererer forslag...");
-      
-      const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
-      if (!functionsUrl) {
-        throw new Error('VITE_SUPABASE_FUNCTIONS_URL er ikke konfigureret');
-      }
-      
-      const response = await fetch(`${functionsUrl}/forslag`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: combinedText,
-          profile: profile
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      setSuggestion(data.suggestion);
+      const suggestion = await generateSuggestion(combinedText, profile);
+      setSuggestion(suggestion);
     } catch (error) {
       console.error('Fejl ved forslag:', error);
       setSuggestion('Fejl ved generering af forslag. Prøv igen.');
