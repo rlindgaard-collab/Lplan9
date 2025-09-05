@@ -56,9 +56,6 @@ const styles = {
 };
 
 function App() {
-  // Brug lokale edge functions under udvikling
-  const SUPABASE_URL = "http://localhost:54321/functions/v1";
-
   const [summary, setSummary] = useState("");
   const [profile, setProfile] = useState("");
   const [kompetenceData, setKompetenceData] = useState({});
@@ -81,6 +78,108 @@ function App() {
     localStorage.setItem("activities", JSON.stringify(activities));
   }, [activities]);
 
+  // Mock PDF processing function
+  const processPdfMock = async (file) => {
+    // Simulate processing time
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const fileName = file.name;
+    const fileSize = file.size;
+    
+    return `Opsummering af ${fileName}:
+
+Dette er en læreplan der indeholder pædagogiske mål og aktiviteter. 
+Dokumentet er ${Math.round(fileSize / 1024)} KB stort.
+
+Hovedpunkter:
+- Kompetencemål for praktikperioden
+- Vidensmål der skal opnås
+- Færdighedsmål for den studerende
+- Pædagogiske aktiviteter og metoder
+- Evaluering og dokumentation
+
+Dokumentet fokuserer på at udvikle den studerendes faglige kompetencer 
+gennem praktisk erfaring og teoretisk viden.
+
+Baseret på indholdet anbefales det at fokusere på praktiske øvelser 
+der kombinerer teoretisk viden med hands-on erfaring.`;
+  };
+
+  // Mock suggestion function
+  const generateSuggestionMock = async (combinedText, profile) => {
+    // Simulate processing time
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const suggestions = {
+      "Kontor og administration": `Forslag til aktivitet for ${profile}:
+
+1. PRAKTISK ØVELSE: Opret og administrer et digitalt arkiveringssystem
+   - Brug Microsoft 365 eller lignende platform
+   - Organiser dokumenter efter kategorier og datoer
+   - Implementer navngivningskonventioner
+
+2. KOMMUNIKATIONSOPGAVE: Skriv og send professionelle e-mails
+   - Øv forskellige e-mail typer (forespørgsler, bekræftelser, opfølgning)
+   - Fokus på tone, struktur og etikette
+   - Inkluder vedhæftede filer og formatering
+
+3. PLANLÆGNINGSAKTIVITET: Koordiner et møde eller event
+   - Brug kalendersystemer til planlægning
+   - Send invitationer og følg op
+   - Forbered dagsorden og materialer
+
+Disse aktiviteter udvikler dine administrative færdigheder og forbereder dig på arbejdslivet.`,
+      
+      "IT og digitale medier": `Forslag til aktivitet for ${profile}:
+
+1. WEBUDVIKLING: Byg en responsiv hjemmeside
+   - Brug HTML, CSS og JavaScript
+   - Implementer mobile-first design
+   - Test på forskellige enheder og browsere
+
+2. DATABASER: Design og implementer en database
+   - Opret tabeller og relationer
+   - Skriv SQL queries til data manipulation
+   - Implementer sikkerhedsforanstaltninger
+
+3. PROJEKTLEDELSE: Planlæg et IT-projekt
+   - Brug agile metoder som Scrum
+   - Opret user stories og sprint planning
+   - Dokumenter proces og resultater
+
+Disse aktiviteter styrker dine tekniske færdigheder og projektledelseskompetencer.`,
+      
+      "Handel og service": `Forslag til aktivitet for ${profile}:
+
+1. KUNDESERVICE: Håndter kundehenvendelser
+   - Øv telefonisk og skriftlig kommunikation
+   - Løs problemer og klager professionelt
+   - Dokumenter kundeinteraktioner
+
+2. SALGSAKTIVITET: Gennemfør et salgsforløb
+   - Identificer kundens behov
+   - Præsenter produkter/services
+   - Følg op på tilbud og lukke salg
+
+3. MARKEDSFØRING: Planlæg en marketingkampagne
+   - Analyser målgruppe og konkurrenter
+   - Udvikl budskaber og materialer
+   - Mål og evaluer kampagnens effekt
+
+Disse aktiviteter udvikler dine kommercielle og kommunikative færdigheder.`
+    };
+    
+    return suggestions[profile] || `Forslag til aktivitet:
+
+Baseret på den uploadede læreplan og den valgte profil anbefales følgende aktiviteter:
+
+1. Gennemfør en praktisk øvelse der kombinerer teori og praksis
+2. Dokumenter din læring gennem refleksion
+3. Evaluer dine resultater i forhold til kompetencemålene
+
+Disse aktiviteter vil hjælpe dig med at opnå de ønskede læringsmål.`;
+  };
+
   // Upload PDF → pdfsummary
   const handlePdfUpload = async (e) => {
     const file = e.target.files[0];
@@ -91,21 +190,14 @@ function App() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
-      const res = await fetch(`${SUPABASE_URL}/pdfsummary`, {
-        method: "POST",
-        body: formData,
-      });
+      // Show loading state
+      setSummary("Behandler PDF...");
+      
+      // Use mock function instead of API call
+      const summary = await processPdfMock(file);
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
-      const data = await res.json();
-      setSummary(data.summary || "Ingen opsummering modtaget");
+      setSummary(summary);
     } catch (error) {
       console.error('Fejl ved upload:', error);
       alert('Fejl ved upload af PDF. Prøv igen.');
@@ -145,18 +237,13 @@ ${(goals.færdighedsmål || []).join("\n")}
 `;
 
     try {
-      const res = await fetch(`${SUPABASE_URL}/forslag`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: combinedText, profile }),
-      });
+      // Show loading state
+      setSuggestion("Genererer forslag...");
+      
+      // Use mock function instead of API call
+      const suggestion = await generateSuggestionMock(combinedText, profile);
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
-      const data = await res.json();
-      setSuggestion(data.suggestion || "Intet forslag modtaget");
+      setSuggestion(suggestion);
     } catch (error) {
       console.error('Fejl ved forslag:', error);
       alert('Fejl ved generering af forslag. Prøv igen.');
