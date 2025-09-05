@@ -80,7 +80,30 @@ function App() {
 
   // Mock PDF processing function
   const processPdf = async (file) => {
-    // Simulate processing time
+  // Check if we're in production (deployed) or development
+  const isProduction = window.location.hostname !== 'localhost';
+  
+  if (isProduction && import.meta.env.VITE_SUPABASE_URL) {
+    // Use real Supabase function when deployed
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pdfsummary`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      },
+      body: formData
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.summary;
+  } else {
+    // Mock implementation for local development
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     const fileName = file.name;
@@ -103,11 +126,36 @@ gennem praktisk erfaring og teoretisk viden.
 
 Baseret på indholdet anbefales det at fokusere på praktiske øvelser 
 der kombinerer teoretisk viden med hands-on erfaring.`;
+  }
   };
 
   // Mock suggestion function
   const generateSuggestion = async (combinedText, profile) => {
-    // Simulate processing time
+  // Check if we're in production (deployed) or development
+  const isProduction = window.location.hostname !== 'localhost';
+  
+  if (isProduction && import.meta.env.VITE_SUPABASE_URL) {
+    // Use real Supabase function when deployed
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/forslag`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: combinedText,
+        profile: profile
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.suggestion;
+  } else {
+    // Mock implementation for local development
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     const suggestions = {
@@ -178,6 +226,7 @@ Baseret på den uploadede læreplan og den valgte profil anbefales følgende akt
 3. Evaluer dine resultater i forhold til kompetencemålene
 
 Disse aktiviteter vil hjælpe dig med at opnå de ønskede læringsmål.`;
+  }
   };
 
   // Upload PDF → pdfsummary
