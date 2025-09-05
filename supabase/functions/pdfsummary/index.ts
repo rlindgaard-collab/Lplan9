@@ -30,29 +30,63 @@ serve(async (req) => {
       })
     }
 
-    // Læs PDF indhold (simpel tekst ekstraktion)
+    // Læs PDF indhold som tekst (simpel ekstraktion)
     const arrayBuffer = await file.arrayBuffer()
     const uint8Array = new Uint8Array(arrayBuffer)
     
-    // For demonstration - i virkeligheden ville du bruge en PDF parser
-    // Her simulerer vi bare en opsummering baseret på filnavn og størrelse
-    const fileName = file.name
-    const fileSize = file.size
-    
-    const summary = `Opsummering af ${fileName}:
+    // Konverter til tekst (dette er en simpel tilgang - i praksis ville du bruge en PDF parser)
+    let extractedText = ""
+    try {
+      // Simpel tekst ekstraktion - i virkeligheden ville du bruge pdf-parse eller lignende
+      const decoder = new TextDecoder('utf-8', { fatal: false })
+      extractedText = decoder.decode(uint8Array)
+      
+      // Hvis ingen tekst kunne ekstraheres, brug filinfo
+      if (!extractedText || extractedText.length < 50) {
+        extractedText = `Læreplan dokument: ${file.name} (${Math.round(file.size / 1024)} KB)`
+      }
+    } catch (e) {
+      extractedText = `Læreplan dokument: ${file.name} (${Math.round(file.size / 1024)} KB)`
+    }
 
-Dette er en læreplan der indeholder pædagogiske mål og aktiviteter. 
-Dokumentet er ${Math.round(fileSize / 1024)} KB stort.
+    // Kald OpenAI API for opsummering
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
+    if (!openaiApiKey) {
+      return new Response(JSON.stringify({ error: 'OpenAI API nøgle ikke konfigureret' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
 
-Hovedpunkter:
-- Kompetencemål for praktikperioden
-- Vidensmål der skal opnås
-- Færdighedsmål for den studerende
-- Pædagogiske aktiviteter og metoder
-- Evaluering og dokumentation
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'Du er en ekspert i pædagogiske læreplaner. Lav en kort, struktureret opsummering af den uploadede læreplan på dansk. Fokuser på hovedmål, kompetencer og vigtige elementer.'
+          },
+          {
+            role: 'user',
+            content: `Lav en opsummering af denne læreplan:\n\n${extractedText.substring(0, 3000)}`
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.7
+      })
+    })
 
-Dokumentet fokuserer på at udvikle den studerendes faglige kompetencer 
-gennem praktisk erfaring og teoretisk viden.`
+    if (!openaiResponse.ok) {
+      throw new Error(`OpenAI API fejl: ${openaiResponse.status}`)
+    }
+
+    const openaiData = await openaiResponse.json()
+    const summary = openaiData.choices[0]?.message?.content || 'Kunne ikke generere opsummering'
 
     return new Response(
       JSON.stringify({ summary }),

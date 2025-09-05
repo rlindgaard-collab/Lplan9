@@ -191,16 +191,30 @@ Disse aktiviteter vil hjælpe dig med at opnå de ønskede læringsmål.`;
     }
 
     try {
-      // Show loading state
       setSummary("Behandler PDF...");
       
-      // Use mock function instead of API call
-      const summary = await processPdfMock(file);
+      const formData = new FormData();
+      formData.append('file', file);
 
-      setSummary(summary);
+      const response = await fetch('/functions/v1/pdfsummary', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setSummary(data.summary);
     } catch (error) {
       console.error('Fejl ved upload:', error);
-      alert('Fejl ved upload af PDF. Prøv igen.');
+      setSummary('Fejl ved behandling af PDF. Prøv igen.');
     }
   };
 
@@ -237,16 +251,33 @@ ${(goals.færdighedsmål || []).join("\n")}
 `;
 
     try {
-      // Show loading state
       setSuggestion("Genererer forslag...");
       
-      // Use mock function instead of API call
-      const suggestion = await generateSuggestionMock(combinedText, profile);
+      const response = await fetch('/functions/v1/forslag', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: combinedText,
+          profile: profile
+        }),
+      });
 
-      setSuggestion(suggestion);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setSuggestion(data.suggestion);
     } catch (error) {
       console.error('Fejl ved forslag:', error);
-      alert('Fejl ved generering af forslag. Prøv igen.');
+      setSuggestion('Fejl ved generering af forslag. Prøv igen.');
     }
   };
 

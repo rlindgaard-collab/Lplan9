@@ -29,81 +29,69 @@ serve(async (req) => {
       })
     }
 
-    // Generer forslag baseret på profil og indhold
-    let suggestion = ""
-    
-    if (profile.includes("Dagtilbudspædagogik")) {
-      suggestion = `Forslag til aktivitet for ${profile}:
-
-🎨 KREATIV LÆRINGSAKTIVITET
-Titel: "Naturens farver og former"
-
-Formål:
-- Udvikle børnenes æstetiske sans og kreativitet
-- Styrke observationsevner og sprogudvikling
-- Fremme samarbejde og social læring
-
-Aktivitet:
-1. Tag børnene med på en naturvandring i haven/parken
-2. Saml forskellige naturmaterialer (blade, sten, pinde)
-3. Lav kollektive kunstværker med de fundne materialer
-4. Dokumenter processen med fotos og børnenes egne ord
-
-Evaluering:
-- Observer børnenes engagement og kreative processer
-- Dokumenter sproglig udvikling gennem samtaler
-- Reflekter over aktivitetens bidrag til kompetencemålene
-
-Denne aktivitet understøtter både æstetisk læring, naturoplevelser og sprogudvikling som nævnt i kompetencemålene.`
-    
-    } else if (profile.includes("Skole- og fritidspædagogik")) {
-      suggestion = `Forslag til aktivitet for ${profile}:
-
-⚽ TVÆRFAGLIG BEVÆGELSESAKTIVITET
-Titel: "Matematik i bevægelse"
-
-Formål:
-- Kombinere læring og bevægelse
-- Styrke samarbejde mellem skole og fritid
-- Udvikle både faglige og sociale kompetencer
-
-Aktivitet:
-1. Design bevægelsesopgaver der integrerer matematik
-2. Skab teams på tværs af aldersgrupper
-3. Brug skolegården til praktiske regneopgaver
-4. Evaluer både faglig læring og trivsel
-
-Tværprofessionelt samarbejde:
-- Koordiner med lærere om faglige mål
-- Inddrag børnenes egne ideer og interesser
-- Dokumenter læreprocesser og sociale dynamikker
-
-Denne aktivitet fremmer både faglig læring og trivsel gennem bevægelse og samarbejde.`
-    
-    } else if (profile.includes("Social- og specialpædagogik")) {
-      suggestion = `Forslag til aktivitet for ${profile}:
-
-🤝 RELATIONSSKABENDE AKTIVITET
-Titel: "Fælles fortællinger"
-
-Formål:
-- Styrke professionelle relationer
-- Udvikle kommunikative kompetencer
-- Fremme inklusion og deltagelse
-
-Aktivitet:
-1. Skab trygge rammer for personlige fortællinger
-2. Brug kreative metoder (tegning, musik, drama)
-3. Fokuser på ressourcer og styrker
-4. Dokumenter udvikling i relationer
-
-Etiske overvejelser:
-- Respekter grænser og privatliv
-- Sikr ligeværdige deltagelsesmuligheder
-- Reflekter over magt og ansvar i relationen
-
-Denne aktivitet understøtter professionel kommunikation og relationsdannelse som beskrevet i målene.`
+    // Kald OpenAI API for aktivitetsforslag
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
+    if (!openaiApiKey) {
+      return new Response(JSON.stringify({ error: 'OpenAI API nøgle ikke konfigureret' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
+
+    const systemPrompt = `Du er en erfaren pædagogisk vejleder der hjælper studerende med at planlægge praktiske læringsaktiviteter. 
+
+Baseret på den givne læreplan og praktikprofil skal du foreslå en konkret, praktisk aktivitet der:
+1. Matcher kompetence- og læringsmålene
+2. Er relevant for den specifikke praktikprofil
+3. Kan gennemføres i praksis
+4. Inkluderer evaluering og refleksion
+
+Strukturer dit svar med:
+- Titel på aktiviteten
+- Formål og læringsmål
+- Konkrete trin til gennemførelse
+- Materialer/ressourcer
+- Evalueringsmetoder
+- Refleksionsspørgsmål
+
+Skriv på dansk og vær konkret og handlingsorienteret.`
+
+    const userPrompt = `Praktikprofil: ${profile}
+
+Læreplan og mål:
+${text}
+
+Lav et konkret forslag til en læringsaktivitet der passer til denne profil og disse mål.`
+
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: userPrompt
+          }
+        ],
+        max_tokens: 800,
+        temperature: 0.8
+      })
+    })
+
+    if (!openaiResponse.ok) {
+      throw new Error(`OpenAI API fejl: ${openaiResponse.status}`)
+    }
+
+    const openaiData = await openaiResponse.json()
+    const suggestion = openaiData.choices[0]?.message?.content || 'Kunne ikke generere forslag'
 
     return new Response(
       JSON.stringify({ suggestion }),
@@ -118,7 +106,6 @@ Denne aktivitet understøtter professionel kommunikation og relationsdannelse so
       JSON.stringify({ error: 'Fejl ved generering af forslag' }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
   }
