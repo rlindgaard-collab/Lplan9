@@ -193,10 +193,15 @@ Disse aktiviteter vil hjælpe dig med at opnå de ønskede læringsmål.`;
     try {
       setSummary("Behandler PDF...");
       
+      const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
+      if (!functionsUrl) {
+        throw new Error('VITE_SUPABASE_FUNCTIONS_URL er ikke konfigureret');
+      }
+      
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/pdfsummary`, {
+      const response = await fetch(`${functionsUrl}/pdfsummary`, {
         method: 'POST',
         body: formData,
       });
@@ -253,7 +258,12 @@ ${(goals.færdighedsmål || []).join("\n")}
     try {
       setSuggestion("Genererer forslag...");
       
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/forslag`, {
+      const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
+      if (!functionsUrl) {
+        throw new Error('VITE_SUPABASE_FUNCTIONS_URL er ikke konfigureret');
+      }
+      
+      const response = await fetch(`${functionsUrl}/forslag`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
