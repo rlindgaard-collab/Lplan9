@@ -72,7 +72,7 @@ function App() {
   useEffect(() => {
     fetch("/kompetencemal.json")
       .then((res) => res.json())
-      .then((data) => setKompetenceData(data));
+      .then((data) => setKompetenceData(data))
       .catch((err) => console.error("Fejl ved indlæsning af kompetencemål:", err));
   }, []);
 
