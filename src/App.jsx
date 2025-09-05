@@ -56,8 +56,8 @@ const styles = {
 };
 
 function App() {
-  const SUPABASE_URL =
-    "https://fjwpfesqfwtozaciphnc.supabase.co/functions/v1";
+  // Brug lokale edge functions under udvikling
+  const SUPABASE_URL = "http://localhost:54321/functions/v1";
 
   const [summary, setSummary] = useState("");
   const [profile, setProfile] = useState("");
@@ -86,16 +86,30 @@ function App() {
     const file = e.target.files[0];
     if (!file) return;
 
+    if (file.type !== 'application/pdf') {
+      alert('Vælg venligst en PDF fil');
+      return;
+    }
+
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await fetch(`${SUPABASE_URL}/pdfsummary`, {
-      method: "POST",
-      body: formData,
-    });
+    try {
+      const res = await fetch(`${SUPABASE_URL}/pdfsummary`, {
+        method: "POST",
+        body: formData,
+      });
 
-    const data = await res.json();
-    setSummary(data.summary || "");
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data = await res.json();
+      setSummary(data.summary || "Ingen opsummering modtaget");
+    } catch (error) {
+      console.error('Fejl ved upload:', error);
+      alert('Fejl ved upload af PDF. Prøv igen.');
+    }
   };
 
   // Skift praktikprofil → vis mål
@@ -130,14 +144,23 @@ Færdighedsmål:
 ${(goals.færdighedsmål || []).join("\n")}
 `;
 
-    const res = await fetch(`${SUPABASE_URL}/forslag`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: combinedText, profile }),
-    });
+    try {
+      const res = await fetch(`${SUPABASE_URL}/forslag`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: combinedText, profile }),
+      });
 
-    const data = await res.json();
-    setSuggestion(data.suggestion || "Intet forslag modtaget");
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data = await res.json();
+      setSuggestion(data.suggestion || "Intet forslag modtaget");
+    } catch (error) {
+      console.error('Fejl ved forslag:', error);
+      alert('Fejl ved generering af forslag. Prøv igen.');
+    }
   };
 
   // Gem aktivitet (max 3)
