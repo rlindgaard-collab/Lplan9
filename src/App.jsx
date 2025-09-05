@@ -1,6 +1,60 @@
 import { useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
 
+// Simpel styling
+const styles = {
+  container: {
+    display: "flex",
+    fontFamily: "Arial, sans-serif",
+    minHeight: "100vh",
+    backgroundColor: "#f5f5f5"
+  },
+  column: {
+    flex: 1,
+    padding: "20px"
+  },
+  card: {
+    marginBottom: "20px",
+    background: "#fff",
+    padding: "15px",
+    borderRadius: "10px",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+  },
+  button: {
+    backgroundColor: "#007bff",
+    color: "white",
+    border: "none",
+    padding: "10px 15px",
+    borderRadius: "5px",
+    cursor: "pointer",
+    marginRight: "10px",
+    marginBottom: "10px"
+  },
+  input: {
+    width: "100%",
+    padding: "8px",
+    marginBottom: "10px",
+    border: "1px solid #ddd",
+    borderRadius: "4px"
+  },
+  textarea: {
+    width: "100%",
+    padding: "8px",
+    marginBottom: "10px",
+    border: "1px solid #ddd",
+    borderRadius: "4px",
+    minHeight: "80px",
+    resize: "vertical"
+  },
+  select: {
+    width: "100%",
+    padding: "8px",
+    marginBottom: "10px",
+    border: "1px solid #ddd",
+    borderRadius: "4px"
+  }
+};
+
 function App() {
   const SUPABASE_URL =
     "https://fjwpfesqfwtozaciphnc.supabase.co/functions/v1";
@@ -16,9 +70,10 @@ function App() {
 
   // Hent kompetencemål.json
   useEffect(() => {
-    fetch("kompetencemal.json")
+    fetch("/kompetencemal.json")
       .then((res) => res.json())
       .then((data) => setKompetenceData(data));
+      .catch((err) => console.error("Fejl ved indlæsning af kompetencemål:", err));
   }, []);
 
   // Gem aktiviteter i localStorage
@@ -47,7 +102,11 @@ function App() {
   const handleProfileChange = (e) => {
     const selected = e.target.value;
     setProfile(selected);
-    setGoals(kompetenceData[selected] || {});
+    if (selected && kompetenceData[selected]) {
+      setGoals(kompetenceData[selected]);
+    } else {
+      setGoals({});
+    }
   };
 
   // Lav forslag → forslag-function
@@ -62,13 +121,13 @@ Resumé:
 ${summary}
 
 Kompetencemål:
-${(goals.kompetencemal || []).join("\n")}
+${goals.kompetencemål || ""}
 
 Vidensmål:
-${(goals.vidensmal || []).join("\n")}
+${(goals.vidensmål || []).join("\n")}
 
 Færdighedsmål:
-${(goals.faerdighedsmal || []).join("\n")}
+${(goals.færdighedsmål || []).join("\n")}
 `;
 
     const res = await fetch(`${SUPABASE_URL}/forslag`, {
@@ -125,45 +184,73 @@ ${(goals.faerdighedsmal || []).join("\n")}
   };
 
   return (
-    <div style={{ display: "flex", fontFamily: "sans-serif" }}>
+    <div style={styles.container}>
       {/* Venstre side */}
-      <div style={{ flex: 1, padding: "20px" }}>
+      <div style={styles.column}>
         <h1>Læringsassistent</h1>
 
-        <div style={{ marginBottom: "20px", background: "#fff", padding: "15px", borderRadius: "10px" }}>
+        <div style={styles.card}>
           <h2>Upload PDF</h2>
-          <input type="file" accept="application/pdf" onChange={handlePdfUpload} />
+          <input 
+            type="file" 
+            accept="application/pdf" 
+            onChange={handlePdfUpload}
+            style={styles.input}
+          />
         </div>
 
-        <div style={{ marginBottom: "20px", background: "#fff", padding: "15px", borderRadius: "10px" }}>
+        <div style={styles.card}>
           <h2>Mine aktiviteter (max 3)</h2>
           {activities.map((act, idx) => (
-            <div key={idx} style={{ border: "1px solid #ddd", padding: "10px", marginBottom: "10px", borderRadius: "6px" }}>
+            <div key={idx} style={{ 
+              border: "1px solid #ddd", 
+              padding: "10px", 
+              marginBottom: "10px", 
+              borderRadius: "6px",
+              backgroundColor: "#f9f9f9"
+            }}>
               <strong>Aktivitet {idx + 1}</strong>
               <p>{act.text}</p>
               <textarea
                 placeholder="Skriv dine refleksioner..."
                 value={act.reflection}
                 onChange={(e) => updateReflection(idx, e.target.value)}
-                style={{ width: "100%", marginBottom: "10px" }}
+                style={styles.textarea}
               />
-              <button onClick={() => deleteActivity(idx)}>Slet</button>
+              <button 
+                onClick={() => deleteActivity(idx)}
+                style={{...styles.button, backgroundColor: "#dc3545"}}
+              >
+                Slet
+              </button>
             </div>
           ))}
-          <button onClick={downloadPDF}>Udskriv alle aktiviteter</button>
+          {activities.length > 0 && (
+            <button onClick={downloadPDF} style={styles.button}>
+              Udskriv alle aktiviteter
+            </button>
+          )}
         </div>
       </div>
 
       {/* Højre side */}
-      <div style={{ flex: 1, padding: "20px" }}>
-        <div style={{ marginBottom: "20px", background: "#fff", padding: "15px", borderRadius: "10px" }}>
+      <div style={styles.column}>
+        <div style={styles.card}>
           <h2>Opsummering af læreplan</h2>
-          <pre>{summary}</pre>
+          <div style={{ 
+            backgroundColor: "#f8f9fa", 
+            padding: "10px", 
+            borderRadius: "4px",
+            whiteSpace: "pre-wrap",
+            minHeight: "100px"
+          }}>
+            {summary || "Upload en PDF for at se opsummering"}
+          </div>
         </div>
 
-        <div style={{ marginBottom: "20px", background: "#fff", padding: "15px", borderRadius: "10px" }}>
+        <div style={styles.card}>
           <h2>Praktikprofil & mål</h2>
-          <select value={profile} onChange={handleProfileChange}>
+          <select value={profile} onChange={handleProfileChange} style={styles.select}>
             <option value="">Vælg profil</option>
             {Object.keys(kompetenceData).map((key) => (
               <option key={key} value={key}>{key}</option>
@@ -172,20 +259,35 @@ ${(goals.faerdighedsmal || []).join("\n")}
           {profile && goals && (
             <div>
               <h3>Kompetencemål</h3>
-              <ul>{(goals.kompetencemal || []).map((m, i) => <li key={i}>{m}</li>)}</ul>
+              <p>{goals.kompetencemål}</p>
               <h3>Vidensmål</h3>
-              <ul>{(goals.vidensmal || []).map((m, i) => <li key={i}>{m}</li>)}</ul>
+              <ul>{(goals.vidensmål || []).map((m, i) => <li key={i}>{m}</li>)}</ul>
               <h3>Færdighedsmål</h3>
-              <ul>{(goals.faerdighedsmal || []).map((m, i) => <li key={i}>{m}</li>)}</ul>
+              <ul>{(goals.færdighedsmål || []).map((m, i) => <li key={i}>{m}</li>)}</ul>
             </div>
           )}
         </div>
 
-        <div style={{ background: "#fff", padding: "15px", borderRadius: "10px" }}>
+        <div style={styles.card}>
           <h2>Lav forslag til aktivitet</h2>
-          <button onClick={handleSuggestion}>Lav forslag</button>
-          <pre>{suggestion}</pre>
-          <button onClick={saveActivity}>Gem aktivitet</button>
+          <button onClick={handleSuggestion} style={styles.button}>
+            Lav forslag
+          </button>
+          <div style={{ 
+            backgroundColor: "#f8f9fa", 
+            padding: "10px", 
+            borderRadius: "4px",
+            whiteSpace: "pre-wrap",
+            minHeight: "100px",
+            marginBottom: "10px"
+          }}>
+            {suggestion || "Klik på 'Lav forslag' for at få aktivitetsforslag"}
+          </div>
+          {suggestion && (
+            <button onClick={saveActivity} style={styles.button}>
+              Gem aktivitet
+            </button>
+          )}
         </div>
       </div>
     </div>
