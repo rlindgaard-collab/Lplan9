@@ -196,7 +196,7 @@ Disse aktiviteter vil hjælpe dig med at opnå de ønskede læringsmål.`;
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/functions/v1/pdfsummary', {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/pdfsummary`, {
         method: 'POST',
         body: formData,
       });
@@ -253,7 +253,7 @@ ${(goals.færdighedsmål || []).join("\n")}
     try {
       setSuggestion("Genererer forslag...");
       
-      const response = await fetch('/functions/v1/forslag', {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/forslag`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
