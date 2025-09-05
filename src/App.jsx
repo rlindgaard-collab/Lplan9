@@ -80,8 +80,11 @@ function App() {
 
   // Mock PDF processing function
   const processPdf = async (file) => {
-  // Check if we have Supabase configured
-  const hasSupabase = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
+  // Check if we have Supabase configured properly
+  const hasSupabase = import.meta.env.VITE_SUPABASE_URL && 
+                     import.meta.env.VITE_SUPABASE_ANON_KEY &&
+                     import.meta.env.VITE_SUPABASE_URL !== 'your-supabase-url' &&
+                     import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your-supabase-anon-key';
   
   if (hasSupabase) {
     // Use real Supabase function when deployed
@@ -98,19 +101,21 @@ function App() {
       });
       
       if (!response.ok) {
-        console.error('Supabase function error:', response.status, response.statusText);
-        throw new Error(`Supabase function error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Supabase function error:', response.status, response.statusText, errorText);
+        throw new Error(`Supabase function error: ${response.status} - ${errorText}`);
       }
       
       const data = await response.json();
       return data.summary;
     } catch (error) {
       console.error('Supabase function failed, falling back to mock:', error);
-      // Fall back to mock if Supabase fails
+      // Show user what went wrong
+      throw new Error(`Supabase ikke konfigureret korrekt: ${error.message}`);
     }
   }
   
-  // Mock implementation (fallback or when Supabase not configured)
+  // Mock implementation when Supabase not configured
   await new Promise(resolve => setTimeout(resolve, 1500));
   
   const fileName = file.name;
@@ -137,8 +142,11 @@ der kombinerer teoretisk viden med hands-on erfaring.`;
 
   // Mock suggestion function
   const generateSuggestion = async (combinedText, profile) => {
-  // Check if we have Supabase configured
-  const hasSupabase = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
+  // Check if we have Supabase configured properly
+  const hasSupabase = import.meta.env.VITE_SUPABASE_URL && 
+                     import.meta.env.VITE_SUPABASE_ANON_KEY &&
+                     import.meta.env.VITE_SUPABASE_URL !== 'your-supabase-url' &&
+                     import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your-supabase-anon-key';
   
   if (hasSupabase) {
     // Use real Supabase function when deployed
@@ -156,19 +164,21 @@ der kombinerer teoretisk viden med hands-on erfaring.`;
       });
       
       if (!response.ok) {
-        console.error('Supabase function error:', response.status, response.statusText);
-        throw new Error(`Supabase function error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Supabase function error:', response.status, response.statusText, errorText);
+        throw new Error(`Supabase function error: ${response.status} - ${errorText}`);
       }
       
       const data = await response.json();
       return data.suggestion;
     } catch (error) {
       console.error('Supabase function failed, falling back to mock:', error);
-      // Fall back to mock if Supabase fails
+      // Show user what went wrong
+      throw new Error(`Supabase ikke konfigureret korrekt: ${error.message}`);
     }
   }
   
-  // Mock implementation (fallback or when Supabase not configured)
+  // Mock implementation when Supabase not configured
   await new Promise(resolve => setTimeout(resolve, 1000));
   
   const suggestions = {
@@ -257,7 +267,7 @@ Disse aktiviteter vil hjælpe dig med at opnå de ønskede læringsmål.`;
       setSummary(summary);
     } catch (error) {
       console.error('Fejl ved upload:', error);
-      setSummary('Fejl ved behandling af PDF. Prøv igen.');
+      setSummary(`Fejl ved behandling af PDF: ${error.message}`);
     }
   };
 
@@ -298,7 +308,7 @@ ${(goals.færdighedsmål || []).join("\n")}
       setSuggestion(suggestion);
     } catch (error) {
       console.error('Fejl ved forslag:', error);
-      setSuggestion('Fejl ved generering af forslag. Prøv igen.');
+      setSuggestion(`Fejl ved generering af forslag: ${error.message}`);
     }
   };
 
