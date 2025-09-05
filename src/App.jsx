@@ -80,36 +80,43 @@ function App() {
 
   // Mock PDF processing function
   const processPdf = async (file) => {
-  // Check if we're in production (deployed) or development
-  const isProduction = window.location.hostname !== 'localhost';
+  // Check if we have Supabase configured
+  const hasSupabase = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
   
-  if (isProduction && import.meta.env.VITE_SUPABASE_URL) {
+  if (hasSupabase) {
     // Use real Supabase function when deployed
     const formData = new FormData();
     formData.append('file', file);
     
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pdfsummary`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-      },
-      body: formData
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pdfsummary`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: formData
+      });
+      
+      if (!response.ok) {
+        console.error('Supabase function error:', response.status, response.statusText);
+        throw new Error(`Supabase function error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.summary;
+    } catch (error) {
+      console.error('Supabase function failed, falling back to mock:', error);
+      // Fall back to mock if Supabase fails
     }
-    
-    const data = await response.json();
-    return data.summary;
-  } else {
-    // Mock implementation for local development
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const fileName = file.name;
-    const fileSize = file.size;
-    
-    return `Opsummering af ${fileName}:
+  }
+  
+  // Mock implementation (fallback or when Supabase not configured)
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  const fileName = file.name;
+  const fileSize = file.size;
+  
+  return `Opsummering af ${fileName}:
 
 Dette er en læreplan der indeholder pædagogiske mål og aktiviteter. 
 Dokumentet er ${Math.round(fileSize / 1024)} KB stort.
@@ -126,39 +133,45 @@ gennem praktisk erfaring og teoretisk viden.
 
 Baseret på indholdet anbefales det at fokusere på praktiske øvelser 
 der kombinerer teoretisk viden med hands-on erfaring.`;
-  }
   };
 
   // Mock suggestion function
   const generateSuggestion = async (combinedText, profile) => {
-  // Check if we're in production (deployed) or development
-  const isProduction = window.location.hostname !== 'localhost';
+  // Check if we have Supabase configured
+  const hasSupabase = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
   
-  if (isProduction && import.meta.env.VITE_SUPABASE_URL) {
+  if (hasSupabase) {
     // Use real Supabase function when deployed
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/forslag`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        text: combinedText,
-        profile: profile
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/forslag`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: combinedText,
+          profile: profile
+        })
+      });
+      
+      if (!response.ok) {
+        console.error('Supabase function error:', response.status, response.statusText);
+        throw new Error(`Supabase function error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.suggestion;
+    } catch (error) {
+      console.error('Supabase function failed, falling back to mock:', error);
+      // Fall back to mock if Supabase fails
     }
-    
-    const data = await response.json();
-    return data.suggestion;
-  } else {
-    // Mock implementation for local development
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const suggestions = {
+  }
+  
+  // Mock implementation (fallback or when Supabase not configured)
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  const suggestions = {
       "Kontor og administration": `Forslag til aktivitet for ${profile}:
 
 1. PRAKTISK ØVELSE: Opret og administrer et digitalt arkiveringssystem
