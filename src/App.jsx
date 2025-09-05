@@ -189,6 +189,8 @@ Disse aktiviteter vil hjælpe dig med at opnå de ønskede læringsmål.`;
       alert('Vælg venligst en PDF fil');
       return;
     }
+
+    try {
       const summary = await processPdf(file);
       setSummary(summary);
     } catch (error) {
